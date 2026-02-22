@@ -3,14 +3,13 @@ import dotenv from "dotenv";
 import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
+import { registerSocketAuth } from "./middleware/auth.middleware.js";
 
 dotenv.config();
-
 
 const app = express();
 app.use(express.json());
 app.use(cors());
-
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -19,9 +18,10 @@ const io = new Server(server, {
     methods: ["GET", "POST"],
   },
 });
+registerSocketAuth(io);
 
 io.on("connection", (socket) => {
-  console.log("User connected", socket.id);
+  console.log("User connected:", socket.user?.email);
 
   socket.on("disconnect", () => {
     console.log("User disconnected", socket.id);
