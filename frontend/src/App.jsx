@@ -4,6 +4,7 @@ import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Editor from "quill/core/editor";
 
 function App() {
   useEffect(() => {
@@ -33,6 +34,7 @@ function App() {
         <Routes>
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/doc/:id" element={<Editor />} />
         </Routes>
       </BrowserRouter>
     </>

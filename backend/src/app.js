@@ -51,13 +51,11 @@ io.on("connection", (socket) => {
 
         //save
         socket.on("save-document", async (content) => {
-          socket.on("save-document", async (content) => {
-            await Document.findByIdAndUpdate(
-              documentId,
-              { content },
-              { new: true },
-            );
-          });
+          await Document.findByIdAndUpdate(
+            documentId,
+            { content },
+            { new: true },
+          );
         });
       });
     } catch (error) {
