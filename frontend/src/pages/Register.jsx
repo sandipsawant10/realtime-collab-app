@@ -1,4 +1,3 @@
-import React from "react";
 import { useState } from "react";
 import { register } from "../services/authApi.js";
 import { useNavigate } from "react-router-dom";
@@ -62,6 +61,7 @@ function Register() {
         <button type="submit">Register</button>
         {error && <p style={{ color: "red" }}>{error}</p>}
       </form>
+      <p>Already have an account? <a href="/login">Login</a></p>
     </div>
   );
 }

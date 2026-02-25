@@ -1,8 +1,10 @@
 import React from "react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { login } from "../services/authApi.js";
 
 function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -15,7 +17,7 @@ function Login() {
         return;
       }
       const response = await login(email, password);
-      if(!response){
+      if (!response) {
         setError("Login failed");
         return;
       }
@@ -24,7 +26,7 @@ function Login() {
       setError("");
       setEmail("");
       setPassword("");
-      // Redirect or update UI after successful login
+      navigate("/");
     } catch (error) {
       setError(error.message || "Login failed");
     }
@@ -49,6 +51,9 @@ function Login() {
           onChange={(e) => setPassword(e.target.value)}
         />
         <button type="submit">Login</button>
+        <p>
+          Don't have an account? <a href="/register">Register</a>
+        </p>
         {error && <p style={{ color: "red" }}>{error}</p>}
       </form>
     </div>

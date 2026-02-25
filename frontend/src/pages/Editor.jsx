@@ -6,7 +6,7 @@ import { io } from "socket.io-client";
 
 const SAVE_INTERVAL = 2000;
 
-export default function Edittor() {
+export default function Editor() {
   const { id } = useParams();
   const quillRef = useRef(null);
   const socketRef = useRef(null);
@@ -56,7 +56,7 @@ export default function Edittor() {
     if (!socket || !quill) return;
 
     socket.once("load-document", (document) => {
-      quill.setContent(document);
+      quill.setContents(document);
       quill.enable();
     });
 

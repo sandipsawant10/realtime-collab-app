@@ -1,5 +1,6 @@
 import Document from "../models/document.model.js";
 
+
 const createDocument = async (req, res) => {
   const { title } = req.body;
 
@@ -82,4 +83,10 @@ const updateDocument = async (req, res) => {
   }
 };
 
-export { createDocument, getDocuments, getDocumentById, deleteDocument, updateDocument };
+export {
+  createDocument,
+  getDocuments,
+  getDocumentById,
+  deleteDocument,
+  updateDocument,
+};
