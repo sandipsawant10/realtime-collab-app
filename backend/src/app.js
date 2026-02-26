@@ -21,8 +21,17 @@ const io = new Server(server, {
 });
 registerSocketAuth(io);
 
+const activeUsers = {};
+
 io.on("connection", (socket) => {
   console.log("User connected:", socket.user?.email);
+
+  const emitUsersInDocument = (documentId) => {
+    const usersInDoc = Object.entries(activeUsers)
+      .filter(([_, data]) => data.documentId === documentId)
+      .map(([_, data]) => data.user);
+    io.to(documentId).emit("users-in-document", usersInDoc);
+  };
 
   //JOIN DOCUMENT ROOM
   socket.on("join-document", async (documentId) => {
@@ -42,21 +51,45 @@ io.on("connection", (socket) => {
       }
       socket.join(documentId);
 
+      activeUsers[socket.id] = {
+        documentId,
+        user: {
+          id: socket.user._id.toString(),
+          email: socket.user.email,
+          username: socket.user.username,
+        },
+      };
+
+      emitUsersInDocument(documentId);
+
       //send existing content to the user
       socket.emit("load-document", document.content);
 
       //listen for changes
-      socket.on("edit-document", async (delta) => {
+      socket.on("send-changes", (delta) => {
         socket.to(documentId).emit("receive-changes", delta);
+      });
 
-        //save
-        socket.on("save-document", async (content) => {
+      //broadcast cursor position
+      socket.on("cursor-move", (cursorData) => {
+        socket.to(documentId).emit("receive-cursor", {
+          userId: socket.user._id.toString(),
+          username: socket.user.username,
+          cursor: cursorData,
+        });
+      });
+
+      //save document
+      socket.on("save-document", async (content) => {
+        try {
           await Document.findByIdAndUpdate(
             documentId,
             { content },
-            { new: true },
+            { returnDocument: "after" },
           );
-        });
+        } catch (error) {
+          console.error("Error saving document:", error);
+        }
       });
     } catch (error) {
       socket.emit("error", "An error occurred while joining the document");
@@ -65,6 +98,12 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log("User disconnected", socket.id);
+    const userData = activeUsers[socket.id];
+    if (userData) {
+      const { documentId } = userData;
+      delete activeUsers[socket.id];
+      emitUsersInDocument(documentId);
+    }
   });
 });
 

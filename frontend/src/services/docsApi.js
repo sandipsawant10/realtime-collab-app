@@ -53,15 +53,6 @@ const deleteDocument = async (id) => {
   }
 };
 
-const updateDocument = async (id, content) => {
-  if (!id) throw new Error("Document ID is required");
-  try {
-    const response = await axiosInstance.put(`/${id}`, { content });
-    return response.data;
-  } catch (error) {
-    throw error.response?.data?.message || error || "Error updating document";
-  }
-};
 
 const getDocumentById = async (id) => {
   if (!id) throw new Error("Document ID is required");
@@ -73,10 +64,23 @@ const getDocumentById = async (id) => {
   }
 };
 
+const shareDocument = async (id, email) => {
+  if (!id) throw new Error("Document ID is required");
+  if (!email) throw new Error("Email is required");
+
+  try {
+    const response = await axiosInstance.post(`/share/${id}`, { email });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || error || "Error sharing document";
+    
+  }
+}
+
 export {
   fetchDocumentsDb,
   createDocument,
   deleteDocument,
-  updateDocument,
   getDocumentById,
+  shareDocument,
 };

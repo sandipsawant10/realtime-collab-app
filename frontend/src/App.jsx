@@ -23,6 +23,7 @@ function App() {
       console.log("Disconnected from server");
     });
 
+    
     return () => {
       socket.disconnect();
     };

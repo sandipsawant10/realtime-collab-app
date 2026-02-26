@@ -4,7 +4,7 @@ import {
   createDocument,
   deleteDocument,
   getDocumentById,
-  updateDocument,
+  shareDocument,
 } from "../services/docsApi";
 import { useNavigate } from "react-router-dom";
 
@@ -14,73 +14,56 @@ function Dashboard() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [noDocs, setNoDocs] = useState(false);
+
+  const user = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
-    //fetch documents
     const fetchDocuments = async () => {
-      if (!localStorage.getItem("token")) {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
         navigate("/login");
-        setError("You must be logged in to view documents");
-        setLoading(false);
         return;
       }
+
       try {
-        setError(null);
         setLoading(true);
+        setError(null);
+
         const response = await fetchDocumentsDb();
-        setDocuments(response.documents);
-        if (response.documents.length === 0) {
-          setNoDocs(true);
-        }
+        setDocuments(response.documents || []);
+      } catch (err) {
+        console.error(err);
+        setError(err.message || "Failed to fetch documents");
+      } finally {
         setLoading(false);
-        console.log(response);
-      } catch (error) {
-        setError(error.message);
-        setLoading(false);
-        console.error("Error fetching documents:", error);
       }
     };
-    fetchDocuments();
-  }, []);
 
-  // if (loading) return <p>Loading...</p>;
-  // if (error) return <p>{error}</p>;
-  // if (noDocs) return <p>No documents found</p>;
+    fetchDocuments();
+  }, [navigate]);
+
+  const isOwner = (doc) => {
+    if (!user) return false;
+    return doc.owner === user._id;
+  };
 
   const handleCreateDoc = async () => {
     try {
       setLoading(true);
-      const response = await createDocument();
-      setDocuments((prev) => [...prev, response.document]);
+
+      const title = prompt("Enter document title:");
+      if (!title) {
+        setLoading(false);
+        return;
+      }
+
+      const response = await createDocument({ title });
+
       navigate(`/doc/${response.document._id}`);
-    } catch (error) {
-      setError(error.message);
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    try {
-      setLoading(true);
-      const response = await deleteDocument(id);
-      console.log(response.message);
-      setDocuments((prev) => prev.filter((doc) => doc._id !== id));
-    } catch (error) {
-      setError(error.message);
-      setLoading(false);
-    }
-  };
-
-  const handleUpdate = async (id, content) => {
-    try {
-      setLoading(true);
-      const response = await updateDocument(id, content);
-      setDocuments((prev) =>
-        prev.map((doc) => (doc._id === id ? response.document : doc)),
-      );
-    } catch (error) {
-      setError(error.message);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Failed to create document");
       setLoading(false);
     }
   };
@@ -88,47 +71,104 @@ function Dashboard() {
   const handleOpen = async (id) => {
     try {
       setLoading(true);
+
       const response = await getDocumentById(id);
       navigate(`/doc/${response.document._id}`);
-    } catch (error) {
-      setError(error.message);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Failed to open document");
       setLoading(false);
     }
   };
+
+  const handleDelete = async (id, doc) => {
+    if (!isOwner(doc)) {
+      setError("Only document owner can delete");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this document?",
+    );
+    if (!confirmDelete) return;
+
+    try {
+      setLoading(true);
+
+      await deleteDocument(id);
+
+      setDocuments((prev) => prev.filter((d) => d._id !== id));
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Delete failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleShare = async (id, doc) => {
+    if (!isOwner(doc)) {
+      setError("Only owner can share document");
+      return;
+    }
+
+    const email = prompt("Enter email to share with:");
+    if (!email) return;
+
+    try {
+      setLoading(true);
+
+      const response = await shareDocument(id, email);
+      alert(response.message);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Share failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
   return (
     <div>
-      <button
-        onClick={() => {
-          localStorage.removeItem("token");
-          navigate("/login");
-        }}
-      >
-        Logout
-      </button>
-      <button onClick={handleCreateDoc}>New Document</button>
-      <h1>Dashboard</h1>
+      <h1>📄 Dashboard</h1>
+
+      <div>
+        <button onClick={handleCreateDoc}>➕ New Document</button>
+        <button onClick={handleLogout}>Logout</button>
+      </div>
+
       {loading && <p>Loading...</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {!loading && documents.length === 0 && (
+        <p>No documents found. Create one!</p>
+      )}
+
       <ul>
-        {documents.map((document) => (
-          <li key={document._id}>
-            <a href={`/doc/${document._id}`}>{document.title}</a>
-            <button onClick={() => handleOpen(document._id)}>Open</button>
-            <button onClick={() => handleDelete(document._id)}>Delete</button>
-            <button
-              onClick={() => handleUpdate(document._id, document.content)}
-            >
-              Edit
-            </button>
+        {documents.map((doc) => (
+          <li key={doc._id}>
+            <strong onClick={() => handleOpen(doc._id)}>{doc.title}</strong>
+
+            <button onClick={() => handleOpen(doc._id)}>Open</button>
+
+            {isOwner(doc) && (
+              <>
+                <button onClick={() => handleDelete(doc._id, doc)}>
+                  Delete
+                </button>
+
+                <button onClick={() => handleShare(doc._id, doc)}>Share</button>
+              </>
+            )}
           </li>
         ))}
       </ul>
-      {noDocs && (
-        <p>
-          No documents found.{" "}
-          <button onClick={handleCreateDoc}>Create a new one!</button>
-        </p>
-      )}
     </div>
   );
 }
