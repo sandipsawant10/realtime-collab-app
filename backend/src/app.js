@@ -110,8 +110,10 @@ io.on("connection", (socket) => {
 //import routes
 import authRouter from "./routes/auth.route.js";
 import documentRouter from "./routes/document.route.js";
+import aiRouter from "./routes/ai.route.js";
 
 app.use("/auth", authRouter);
 app.use("/documents", documentRouter);
+app.use("/ai", aiRouter);
 
 export { app, server, io };

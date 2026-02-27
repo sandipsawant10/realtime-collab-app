@@ -5,6 +5,7 @@ import "quill/dist/quill.snow.css";
 import { useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import { useState } from "react";
+import { useAI } from "../hooks/useAI";
 
 const SAVE_INTERVAL = 2000;
 
@@ -19,6 +20,16 @@ export default function Editor() {
   const cursorColorsRef = useRef({});
 
   const [users, setUsers] = useState([]);
+  const {
+    aiPrompt,
+    setAiPrompt,
+    aiResponse,
+    setAiResponse,
+    aiLoading,
+    grammarLoading,
+    handleGenerateAI,
+    handleImproveGrammar,
+  } = useAI(quillRef, id);
 
   //connect to socket server
   useEffect(() => {
@@ -204,8 +215,22 @@ export default function Editor() {
     });
   }, [users]);
 
+  const handleInsertAI = () => {
+    if (!aiResponse.trim()) return;
+
+    const quill = quillRef.current;
+    const range = quill.getSelection(true);
+
+    if (range) {
+      quill.insertText(range.index, aiResponse);
+    } else {
+      quill.insertText(quill.getLength() - 1, aiResponse);
+    }
+    setAiResponse("");
+  };
+
   return (
-    <div>
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
       <div
         style={{
           padding: "10px",
@@ -236,7 +261,59 @@ export default function Editor() {
           ))}
         </div>
       </div>
-      <div style={{ height: "calc(100vh - 50px)" }} ref={wrapperRef}></div>
+      <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
+        <div style={{ flex: "1 1 70%", minWidth: 0 }} ref={wrapperRef}></div>
+        <div
+          style={{
+            width: "30%",
+            padding: "10px",
+            borderLeft: "1px solid #ccc",
+          }}
+        >
+          <h3>AI Assistant</h3>
+
+          <div style={{ marginBottom: "20px" }}>
+            <h4 style={{ marginBottom: "8px" }}>Improve Grammar</h4>
+            <p style={{ fontSize: "12px", color: "#666", marginBottom: "8px" }}>
+              Select text in the editor, then click:
+            </p>
+            <button
+              onClick={handleImproveGrammar}
+              disabled={grammarLoading}
+              style={{ width: "100%", padding: "8px" }}
+            >
+              {grammarLoading ? "Improving..." : "✨ Improve Grammar"}
+            </button>
+          </div>
+
+          <hr
+            style={{
+              margin: "20px 0",
+              border: "none",
+              borderTop: "1px solid #ddd",
+            }}
+          />
+
+          <h4 style={{ marginBottom: "8px" }}>Generate Content</h4>
+          <textarea
+            placeholder="What should AI do?"
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+            style={{ width: "100%", height: "80px" }}
+          />
+          <button onClick={handleGenerateAI} disabled={aiLoading}>
+            {aiLoading ? "Generating..." : "Generate"}
+          </button>
+          {aiResponse && (
+            <>
+              <div style={{ marginTop: "10px", whiteSpace: "pre-wrap" }}>
+                {aiResponse}
+              </div>
+              <button onClick={handleInsertAI}>Insert into Document</button>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
