@@ -7,6 +7,7 @@ import {
   shareDocument,
 } from "../services/docsApi";
 import { useNavigate } from "react-router-dom";
+import styles from "./Dashboard.module.css";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -14,6 +15,11 @@ function Dashboard() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [modalInput, setModalInput] = useState("");
+  const [currentDocId, setCurrentDocId] = useState(null);
 
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -35,6 +41,7 @@ function Dashboard() {
       } catch (err) {
         console.error(err);
         setError(err.message || "Failed to fetch documents");
+        setTimeout(() => setError(null), 5000);
       } finally {
         setLoading(false);
       }
@@ -48,22 +55,29 @@ function Dashboard() {
     return doc.owner === user._id;
   };
 
-  const handleCreateDoc = async () => {
+  const handleCreateDoc = () => {
+    setModalInput("");
+    setShowCreateModal(true);
+  };
+
+  const confirmCreateDoc = async () => {
+    if (!modalInput.trim()) {
+      setError("Please enter a document title");
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+
     try {
       setLoading(true);
+      setShowCreateModal(false);
 
-      const title = prompt("Enter document title:");
-      if (!title) {
-        setLoading(false);
-        return;
-      }
-
-      const response = await createDocument({ title });
+      const response = await createDocument({ title: modalInput });
 
       navigate(`/doc/${response.document._id}`);
     } catch (err) {
       console.error(err);
       setError(err.message || "Failed to create document");
+      setTimeout(() => setError(null), 5000);
       setLoading(false);
     }
   };
@@ -77,6 +91,7 @@ function Dashboard() {
     } catch (err) {
       console.error(err);
       setError(err.message || "Failed to open document");
+      setTimeout(() => setError(null), 5000);
       setLoading(false);
     }
   };
@@ -84,6 +99,7 @@ function Dashboard() {
   const handleDelete = async (id, doc) => {
     if (!isOwner(doc)) {
       setError("Only document owner can delete");
+      setTimeout(() => setError(null), 5000);
       return;
     }
 
@@ -101,28 +117,45 @@ function Dashboard() {
     } catch (err) {
       console.error(err);
       setError(err.message || "Delete failed");
+      setTimeout(() => setError(null), 5000);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleShare = async (id, doc) => {
+  const handleShare = (id, doc) => {
     if (!isOwner(doc)) {
       setError("Only owner can share document");
+      setTimeout(() => setError(null), 5000);
       return;
     }
 
-    const email = prompt("Enter email to share with:");
-    if (!email) return;
+    setModalInput("");
+    setCurrentDocId(id);
+
+    setShowShareModal(true);
+  };
+
+  const confirmShare = async () => {
+    if (!modalInput.trim()) {
+      setError("Please enter an email address");
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
 
     try {
       setLoading(true);
+      setShowShareModal(false);
+      setError(null);
+      setSuccessMessage(null);
 
-      const response = await shareDocument(id, email);
-      alert(response.message);
+      const response = await shareDocument(currentDocId, modalInput);
+      setSuccessMessage(response.message || "Document shared successfully!");
+      setTimeout(() => setSuccessMessage(null), 5000);
     } catch (err) {
       console.error(err);
       setError(err.message || "Share failed");
+      setTimeout(() => setError(null), 5000);
     } finally {
       setLoading(false);
     }
@@ -135,40 +168,181 @@ function Dashboard() {
   };
 
   return (
-    <div>
-      <h1>📄 Dashboard</h1>
+    <div className={styles.dashboardContainer}>
+      <div className={styles.dashboardWrapper}>
+        {/* Header */}
+        <div className={styles.header}>
+          <div>
+            <h1 className={styles.title}>My Documents</h1>
+            <p className={styles.subtitle}>
+              Welcome back, {user?.username || "User"}!
+            </p>
+          </div>
+          <button onClick={handleLogout} className={styles.logoutBtn}>
+            Logout
+          </button>
+        </div>
 
-      <div>
-        <button onClick={handleCreateDoc}>➕ New Document</button>
-        <button onClick={handleLogout}>Logout</button>
-      </div>
+        {/* Actions */}
+        <div className={styles.actions}>
+          <button
+            onClick={handleCreateDoc}
+            className={styles.createBtn}
+            disabled={loading}
+          >
+            ➕ New Document
+          </button>
+        </div>
 
-      {loading && <p>Loading...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
+        {/* Error message */}
+        {error && <div className={styles.errorMessage}>{error}</div>}
 
-      {!loading && documents.length === 0 && (
-        <p>No documents found. Create one!</p>
-      )}
+        {/* Success message */}
+        {successMessage && (
+          <div className={styles.successMessage}>{successMessage}</div>
+        )}
 
-      <ul>
-        {documents.map((doc) => (
-          <li key={doc._id}>
-            <strong onClick={() => handleOpen(doc._id)}>{doc.title}</strong>
+        {/* Loading state */}
+        {loading && <div className={styles.loadingMessage}>Loading...</div>}
 
-            <button onClick={() => handleOpen(doc._id)}>Open</button>
+        {/* Empty state */}
+        {!loading && documents.length === 0 && (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>📄</div>
+            <h3>No documents yet</h3>
+            <p>Create your first document to get started!</p>
+          </div>
+        )}
 
-            {isOwner(doc) && (
-              <>
-                <button onClick={() => handleDelete(doc._id, doc)}>
-                  Delete
+        {/* Documents Grid */}
+        {!loading && documents.length > 0 && (
+          <div className={styles.documentsGrid}>
+            {documents.map((doc) => (
+              <div key={doc._id} className={styles.documentCard}>
+                <div className={styles.cardHeader}>
+                  <h3
+                    className={styles.docTitle}
+                    onClick={() => handleOpen(doc._id)}
+                  >
+                    {doc.title}
+                  </h3>
+                  <span className={styles.ownerBadge}>
+                    {isOwner(doc) ? "👑 Owner" : "👥 Shared"}
+                  </span>
+                </div>
+
+                <div className={styles.cardActions}>
+                  <button
+                    onClick={() => handleOpen(doc._id)}
+                    className={styles.openBtn}
+                  >
+                    Open
+                  </button>
+
+                  {isOwner(doc) && (
+                    <>
+                      <button
+                        onClick={() => handleShare(doc._id, doc)}
+                        className={styles.shareBtn}
+                      >
+                        Share
+                      </button>
+                      <button
+                        onClick={() => handleDelete(doc._id, doc)}
+                        className={styles.deleteBtn}
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Create Document Modal */}
+        {showCreateModal && (
+          <div
+            className={styles.modalOverlay}
+            onClick={() => setShowCreateModal(false)}
+          >
+            <div
+              className={styles.modalContent}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className={styles.modalTitle}>Create New Document</h3>
+              <p className={styles.modalDescription}>
+                Enter a title for your new document
+              </p>
+              <input
+                type="text"
+                value={modalInput}
+                onChange={(e) => setModalInput(e.target.value)}
+                placeholder="Document title"
+                className={styles.modalInput}
+                autoFocus
+                onKeyPress={(e) => e.key === "Enter" && confirmCreateDoc()}
+              />
+              <div className={styles.modalActions}>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className={styles.modalCancelBtn}
+                >
+                  Cancel
                 </button>
+                <button
+                  onClick={confirmCreateDoc}
+                  className={styles.modalConfirmBtn}
+                >
+                  Create
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-                <button onClick={() => handleShare(doc._id, doc)}>Share</button>
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
+        {/* Share Document Modal */}
+        {showShareModal && (
+          <div
+            className={styles.modalOverlay}
+            onClick={() => setShowShareModal(false)}
+          >
+            <div
+              className={styles.modalContent}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className={styles.modalTitle}>Share Document</h3>
+              <p className={styles.modalDescription}>
+                Enter the email address to share with
+              </p>
+              <input
+                type="email"
+                value={modalInput}
+                onChange={(e) => setModalInput(e.target.value)}
+                placeholder="email@example.com"
+                className={styles.modalInput}
+                autoFocus
+                onKeyPress={(e) => e.key === "Enter" && confirmShare()}
+              />
+              <div className={styles.modalActions}>
+                <button
+                  onClick={() => setShowShareModal(false)}
+                  className={styles.modalCancelBtn}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmShare}
+                  className={styles.modalConfirmBtn}
+                >
+                  Share
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

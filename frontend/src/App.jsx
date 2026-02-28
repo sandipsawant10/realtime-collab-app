@@ -23,24 +23,20 @@ function App() {
       console.log("Disconnected from server");
     });
 
-    
     return () => {
       socket.disconnect();
     };
   }, []);
 
   return (
-    <>
-      <h1>Welcome to the Frontend!</h1>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/register" element={<Register />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/doc/:id" element={<Editor />} />
-          <Route path="/" element={<Dashboard />} />
-        </Routes>
-      </BrowserRouter>
-    </>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/doc/:id" element={<Editor />} />
+        <Route path="/" element={<Dashboard />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

@@ -2,10 +2,11 @@ import { useRef, useEffect } from "react";
 import Quill from "quill";
 import QuillCursors from "quill-cursors";
 import "quill/dist/quill.snow.css";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import { useState } from "react";
 import { useAI } from "../hooks/useAI";
+import styles from "./Editor.module.css";
 
 const SAVE_INTERVAL = 2000;
 
@@ -13,6 +14,7 @@ Quill.register("modules/cursors", QuillCursors);
 
 export default function Editor() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const quillRef = useRef(null);
   const socketRef = useRef(null);
   const wrapperRef = useRef(null);
@@ -230,87 +232,76 @@ export default function Editor() {
   };
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-      <div
-        style={{
-          padding: "10px",
-          background: "#b97e07",
-          borderBottom: "1px solid #ddd",
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-        }}
-      >
-        <span style={{ fontWeight: "bold" }}>
-          Active Users ({users.length}):
-        </span>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          {users.map((user, index) => (
-            <span
-              key={user.id || index}
-              style={{
-                padding: "4px 8px",
-                background: "#007bff",
-                color: "white",
-                borderRadius: "12px",
-                fontSize: "12px",
-              }}
-            >
-              {user.username || user.email}
+    <div className={styles.editorContainer}>
+      {/* Header */}
+      <div className={styles.editorHeader}>
+        <div className={styles.headerContent}>
+          <button onClick={() => navigate("/")} className={styles.backBtn}>
+            ← Back to Dashboard
+          </button>
+          <div className={styles.usersInfo}>
+            <span className={styles.usersLabel}>
+              👥 Active Users ({users.length}):
             </span>
-          ))}
+            <div className={styles.usersList}>
+              {users.map((user, index) => (
+                <span key={user.id || index} className={styles.userBadge}>
+                  {user.username || user.email}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
-      <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-        <div style={{ flex: "1 1 70%", minWidth: 0 }} ref={wrapperRef}></div>
-        <div
-          style={{
-            width: "30%",
-            padding: "10px",
-            borderLeft: "1px solid #ccc",
-          }}
-        >
-          <h3>AI Assistant</h3>
 
-          <div style={{ marginBottom: "20px" }}>
-            <h4 style={{ marginBottom: "8px" }}>Improve Grammar</h4>
-            <p style={{ fontSize: "12px", color: "#666", marginBottom: "8px" }}>
-              Select text in the editor, then click:
+      {/* Main Editor Area */}
+      <div className={styles.editorWrapper}>
+        <div className={styles.editorContent} ref={wrapperRef}></div>
+
+        {/* AI Assistant Sidebar */}
+        <div className={styles.aiSidebar}>
+          <h3 className={styles.aiTitle}>✨ AI Assistant</h3>
+
+          <div className={styles.aiSection}>
+            <h4 className={styles.aiSectionTitle}>Improve Grammar</h4>
+            <p className={styles.aiSectionDescription}>
+              Select text in the editor, then click below:
             </p>
             <button
               onClick={handleImproveGrammar}
               disabled={grammarLoading}
-              style={{ width: "100%", padding: "8px" }}
+              className={styles.aiButton}
             >
               {grammarLoading ? "Improving..." : "✨ Improve Grammar"}
             </button>
           </div>
 
-          <hr
-            style={{
-              margin: "20px 0",
-              border: "none",
-              borderTop: "1px solid #ddd",
-            }}
-          />
+          <hr className={styles.aiDivider} />
 
-          <h4 style={{ marginBottom: "8px" }}>Generate Content</h4>
-          <textarea
-            placeholder="What should AI do?"
-            value={aiPrompt}
-            onChange={(e) => setAiPrompt(e.target.value)}
-            style={{ width: "100%", height: "80px" }}
-          />
-          <button onClick={handleGenerateAI} disabled={aiLoading}>
-            {aiLoading ? "Generating..." : "Generate"}
-          </button>
+          <div className={styles.aiSection}>
+            <h4 className={styles.aiSectionTitle}>Generate Content</h4>
+            <textarea
+              placeholder="What should AI do?"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              className={styles.aiTextarea}
+            />
+            <button
+              onClick={handleGenerateAI}
+              disabled={aiLoading}
+              className={styles.aiButton}
+            >
+              {aiLoading ? "Generating..." : "Generate"}
+            </button>
+          </div>
+
           {aiResponse && (
-            <>
-              <div style={{ marginTop: "10px", whiteSpace: "pre-wrap" }}>
-                {aiResponse}
-              </div>
-              <button onClick={handleInsertAI}>Insert into Document</button>
-            </>
+            <div className={styles.aiResponse}>
+              <div className={styles.aiResponseText}>{aiResponse}</div>
+              <button onClick={handleInsertAI} className={styles.insertBtn}>
+                Insert into Document
+              </button>
+            </div>
           )}
         </div>
       </div>
