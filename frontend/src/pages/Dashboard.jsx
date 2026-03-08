@@ -18,8 +18,10 @@ function Dashboard() {
   const [successMessage, setSuccessMessage] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [modalInput, setModalInput] = useState("");
   const [currentDocId, setCurrentDocId] = useState(null);
+  const [currentDocTitle, setCurrentDocTitle] = useState("");
 
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -96,24 +98,30 @@ function Dashboard() {
     }
   };
 
-  const handleDelete = async (id, doc) => {
+  const handleDelete = (id, doc) => {
     if (!isOwner(doc)) {
       setError("Only document owner can delete");
       setTimeout(() => setError(null), 5000);
       return;
     }
 
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this document?",
-    );
-    if (!confirmDelete) return;
+    setCurrentDocId(id);
+    setCurrentDocTitle(doc.title || "this document");
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!currentDocId) return;
 
     try {
       setLoading(true);
+      setShowDeleteModal(false);
 
-      await deleteDocument(id);
+      await deleteDocument(currentDocId);
 
-      setDocuments((prev) => prev.filter((d) => d._id !== id));
+      setDocuments((prev) => prev.filter((d) => d._id !== currentDocId));
+      setCurrentDocId(null);
+      setCurrentDocTitle("");
     } catch (err) {
       console.error(err);
       setError(err.message || "Delete failed");
@@ -337,6 +345,39 @@ function Dashboard() {
                   className={styles.modalConfirmBtn}
                 >
                   Share
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && (
+          <div
+            className={styles.modalOverlay}
+            onClick={() => setShowDeleteModal(false)}
+          >
+            <div
+              className={styles.modalContent}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className={styles.modalTitle}>Delete Document</h3>
+              <p className={styles.modalDescription}>
+                Are you sure you want to delete "{currentDocTitle}"? This action
+                cannot be undone.
+              </p>
+              <div className={styles.modalActions}>
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className={styles.modalCancelBtn}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className={styles.modalConfirmBtn}
+                >
+                  Delete
                 </button>
               </div>
             </div>

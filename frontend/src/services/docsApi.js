@@ -31,11 +31,14 @@ const fetchDocumentsDb = async () => {
   }
 };
 
-const createDocument = async () => {
+const createDocument = async (payload = {}) => {
+  const title = payload?.title?.trim() || "Untitled Document";
+  const content = payload?.content ?? {};
+
   try {
     const response = await axiosInstance.post("/", {
-      title: "Untitled Document",
-      content: {},
+      title,
+      content,
     });
     return response.data;
   } catch (error) {
@@ -52,7 +55,6 @@ const deleteDocument = async (id) => {
     throw error.response?.data?.message || error || "Error deleting document";
   }
 };
-
 
 const getDocumentById = async (id) => {
   if (!id) throw new Error("Document ID is required");
@@ -73,9 +75,8 @@ const shareDocument = async (id, email) => {
     return response.data;
   } catch (error) {
     throw error.response?.data?.message || error || "Error sharing document";
-    
   }
-}
+};
 
 export {
   fetchDocumentsDb,
