@@ -6,7 +6,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import { useState } from "react";
 import { useAI } from "../hooks/useAI";
-import styles from "./Editor.module.css";
+import styles from "./styles/Editor.module.css";
 
 const SAVE_INTERVAL = 2000;
 

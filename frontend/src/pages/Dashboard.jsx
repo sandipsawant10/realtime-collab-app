@@ -7,7 +7,7 @@ import {
   shareDocument,
 } from "../services/docsApi";
 import { useNavigate } from "react-router-dom";
-import styles from "./Dashboard.module.css";
+import styles from "./styles/Dashboard.module.css";
 
 function Dashboard() {
   const navigate = useNavigate();

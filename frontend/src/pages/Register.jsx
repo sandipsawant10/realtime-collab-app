@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { register } from "../services/authApi.js";
 import { useNavigate, Link } from "react-router-dom";
-import styles from "./Register.module.css";
+import styles from "./styles/Register.module.css";
 
 function Register() {
   const [username, setUsername] = useState("");
